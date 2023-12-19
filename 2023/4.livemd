@@ -46,19 +46,37 @@ defmodule Cards do
     |> Enum.map(fn card ->
       [Enum.at(card, 0), MapSet.intersection(Enum.at(card, 1), Enum.at(card, 2))]
     end)
-    |> Enum.map(fn card -> [Enum.at(card, 0), win(Enum.count(Enum.at(card, 1)))] end)
+    |> Enum.map(fn card -> [Enum.at(card, 0), Enum.count(Enum.at(card, 1))] end)
     |> dbg()
   end
 
   def go1(cards) do
     fill(cards)
+    |> Enum.map(fn card -> [Enum.at(card, 0), win(Enum.at(card, 1))] end)
     |> Enum.map(fn card -> Enum.at(card, 1) end)
     |> Enum.sum()
   end
 
+  def recurse([]), do: 0
+  def recurse([0 | _tail]), do: 1
+
+  def recurse([item | others]) do
+    finish = if item > Enum.count(others), do: Enum.count(others), else: item
+
+    Range.new(0, finish - 1)
+    |> Enum.map(fn pos -> recurse(Enum.slice(others, Range.new(pos, Enum.count(others) - 1))) end)
+    |> Enum.concat([1])
+  end
+
   def go2(cards) do
-    fill(cards)
-    |> dbg()
+    clean_cards = Enum.map(fill(cards), fn card -> Enum.at(card, 1) end)
+
+    Range.new(0, Enum.count(clean_cards))
+    |> Enum.map(fn pos ->
+      recurse(Enum.slice(clean_cards, Range.new(pos, Enum.count(clean_cards))))
+    end)
+    |> List.flatten()
+    |> Enum.sum()
   end
 end
 ```
@@ -287,4 +305,23 @@ Card 213:  8 24 48  5 27 13 71 26 17 21 | 63 11 89 35 69 98 91 60 51 70 12 62 39
 
 ```elixir
 Cards.go1(full_set)
+```
+
+```elixir
+test_set2 = """
+Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
+Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
+Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
+Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
+Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
+"""
+```
+
+```elixir
+Cards.go2(test_set2)
+```
+
+```elixir
+Cards.go2(full_set)
 ```
