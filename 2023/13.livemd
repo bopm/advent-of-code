@@ -1,0 +1,98 @@
+# Advent of Code 2023 Day 13
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule Mirror do
+  def process_pattern(pattern) do
+    pattern
+    |> String.split("\n", trim: true)
+    |> Enum.map(&String.split(&1, "", trim: true))
+  end
+
+  def find_mirror(pattern, vertical \\ false) do
+    pattern =
+      if vertical do
+        Enum.zip(pattern)
+        |> Enum.map(&Tuple.to_list/1)
+      else
+        pattern
+      end
+
+    Range.new(1, length(pattern) - 1)
+    |> Enum.map(fn split -> {split, Enum.split(pattern, split)} end)
+    |> Enum.map(fn {index, {first, second}} ->
+      min = Enum.min([length(first), length(second)])
+
+      {index,
+       {Enum.slice(first, Range.new(-min, -1)),
+        Enum.reverse(Enum.slice(second, Range.new(0, min - 1)))}}
+    end)
+    |> Enum.reject(fn {_index, {first, second}} -> first != second end)
+    |> Enum.map(fn {index, _} -> index end)
+  end
+
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n\n", trim: true)
+    |> Enum.map(&process_pattern(&1))
+  end
+
+  def find_sums(pattern) do
+    List.flatten(
+      Enum.map(find_mirror(pattern), fn index -> index * 100 end) ++ find_mirror(pattern, true)
+    )
+  end
+
+  def p1(input) do
+    parse(input)
+    |> Enum.map(fn pattern -> find_sums(pattern) end)
+    |> List.flatten()
+    |> Enum.sum()
+  end
+
+  def replace(pattern, x, y, val) do
+    List.replace_at(pattern, y, List.replace_at(Enum.at(pattern, y), x, val))
+  end
+
+  def toggle("."), do: "#"
+  def toggle("#"), do: "."
+
+  def new_sums(pattern) do
+    pattern
+    |> Enum.with_index()
+    |> Enum.flat_map(fn {row, row_index} ->
+      Enum.map(Enum.with_index(row), fn {position, col_index} ->
+        find_sums(replace(pattern, col_index, row_index, toggle(position)))
+      end)
+    end)
+    |> List.flatten()
+    |> Enum.uniq()
+  end
+
+  def p2(input) do
+    parse(input)
+    |> Enum.map(fn pattern -> new_sums(pattern) -- find_sums(pattern) end)
+    |> List.flatten()
+    |> Enum.sum()
+  end
+end
+```
+
+```elixir
+Mirror.p1(input)
+```
+
+```elixir
+Mirror.p2(input)
+```

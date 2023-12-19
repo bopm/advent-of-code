@@ -1,0 +1,81 @@
+# Advent of Code 2023 Day 8
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"},
+  {:math, "~> 0.7.0"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+import Math
+
+defmodule Wasteland do
+  def build(route) do
+    {hd(route), tl(route) ++ Enum.map(tl(route), fn route -> String.at(route, 2) end)}
+  end
+
+  def parse_routes(routes) do
+    String.split(routes, "\n", trim: true)
+    |> Enum.map(fn route -> String.split(route, ~r/[\s\=\(\)\,]/, trim: true) end)
+
+    # |> Map.new
+  end
+
+  def parse(input) do
+    input
+    |> Kino.Input.read()
+    |> String.split("\n\n", trim: true)
+    |> (&[hd(&1), parse_routes(Enum.at(&1, 1))]).()
+    |> (&[
+          hd(&1),
+          Enum.map(Enum.at(&1, 1), fn index -> Enum.at(index, 0) end),
+          Map.new(Enum.map(Enum.at(&1, 1), fn route -> build(route) end))
+        ]).()
+  end
+
+  def step(index, pattern, start, routes) do
+    if Enum.at(start, 1) == "Z" do
+      index
+    else
+      current_pattern = hd(pattern)
+      remaining_pattern = Enum.concat(tl(pattern), [current_pattern])
+      steering = if current_pattern == "R", do: 1, else: 0
+      {_, route} = Map.fetch(routes, Enum.at(start, 0))
+      direction = [Enum.at(route, steering), Enum.at(route, steering + 2)]
+      step(index + 1, remaining_pattern, direction, routes)
+    end
+  end
+
+  def walk(input) do
+    [pattern, indexes, routes] = parse(input)
+    step(1, String.split(pattern, "", trim: true), ["AAA", "A"], routes) - 1
+  end
+
+  def ghost_walk(input) do
+    [pattern, indexes, routes] = parse(input)
+
+    starts =
+      Enum.filter(indexes, fn index -> String.ends_with?(index, "A") end)
+      |> Enum.map(fn start -> [start, String.at(start, 2)] end)
+
+    starts
+    |> Enum.map(fn route -> step(1, String.split(pattern, "", trim: true), route, routes) - 1 end)
+    |> Enum.reduce(1, &lcm/2)
+  end
+end
+```
+
+```elixir
+Wasteland.walk(input)
+```
+
+```elixir
+Wasteland.ghost_walk(input)
+```

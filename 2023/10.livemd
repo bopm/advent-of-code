@@ -1,0 +1,138 @@
+# Advent of Code 2023 Day 10
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"},
+  {:libgraph, "~> 0.16.0"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("diagram")
+```
+
+```elixir
+defmodule Router do
+  def parse(input) do
+    input
+    |> Kino.Input.read()
+    |> String.split("\n", trim: true)
+    |> Enum.with_index()
+    |> Enum.map(fn {str, y} ->
+      Enum.map(Enum.with_index(String.split(str, "", trim: true)), fn {str, x} ->
+        %{value: str, coords: [x, y]}
+      end)
+    end)
+  end
+
+  def coords(%{value: "S", coords: [x, y]} = _tile, max_x, max_y) do
+    [
+      [x - 1, y],
+      [x + 1, y],
+      [x, y - 1],
+      [x, y + 1]
+    ]
+    |> Enum.reject(fn [x, y] -> x < 0 || y < 0 || x > max_x || y > max_y end)
+  end
+
+  def coords(%{value: ".", coords: [_x, _y]} = _tile, _max_x, _max_y) do
+    nil
+  end
+
+  def coords(%{value: "-", coords: [x, y]} = _tile, max_x, _max_y) do
+    if x == max_x || x == 0 do
+      nil
+    else
+      [[x - 1, y], [x + 1, y]]
+    end
+  end
+
+  def coords(%{value: "|", coords: [x, y]} = _tile, _max_x, max_y) do
+    if y == max_y || y == 0 do
+      nil
+    else
+      [[x, y - 1], [x, y + 1]]
+    end
+  end
+
+  def coords(%{value: "L", coords: [x, y]} = _tile, max_x, _max_y) do
+    if y == 0 || x == max_x do
+      nil
+    else
+      [[x, y - 1], [x + 1, y]]
+    end
+  end
+
+  def coords(%{value: "J", coords: [x, y]} = _tile, _max_x, _max_y) do
+    if y == 0 || x == 0 do
+      nil
+    else
+      [[x, y - 1], [x - 1, y]]
+    end
+  end
+
+  def coords(%{value: "7", coords: [x, y]} = _tile, _max_x, max_y) do
+    if y == max_y || x == 0 do
+      nil
+    else
+      [[x - 1, y], [x, y + 1]]
+    end
+  end
+
+  def coords(%{value: "F", coords: [x, y]} = _tile, max_x, max_y) do
+    if y == max_y || x == max_x do
+      nil
+    else
+      [[x + 1, y], [x, y + 1]]
+    end
+  end
+
+  def tile(sketch, x, y) do
+    Enum.at(sketch, y) |> Enum.at(x)
+  end
+
+  def start_tile(sketch) do
+    sketch
+    |> List.flatten()
+    |> Enum.find(fn tile -> Map.get(tile, :value) == "S" end)
+  end
+
+  def get_route(input) do
+    sketch = parse(input)
+
+    List.flatten(sketch)
+    |> Enum.reduce(Graph.new(), fn tile, graph ->
+      coords = coords(tile, Enum.count(sketch) - 1, Enum.count(Enum.at(sketch, 0)) - 1)
+
+      if coords != nil do
+        tile_coords = Map.get(tile, :coords)
+
+        Enum.reduce(coords, graph, fn coord, graph ->
+          if coord != nil,
+            do: Graph.add_edge(graph, List.to_tuple(tile_coords), List.to_tuple(coord)),
+            else: graph
+        end)
+      else
+        graph
+      end
+    end)
+  end
+
+  def p1(input) do
+    sketch = parse(input)
+    start_coords = List.to_tuple(Map.get(start_tile(sketch), :coords))
+
+    get_route(input)
+    |> Graph.Pathfinding.all(start_coords, start_coords)
+    |> Enum.max_by(fn route -> length(route) end)
+    |> length()
+    |> div(2)
+  end
+end
+```
+
+```elixir
+Router.p1(input)
+```

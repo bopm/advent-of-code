@@ -1,0 +1,80 @@
+# Advent of Code 2023 Day 6
+
+## Section
+
+```elixir
+input = """
+Time:      7  15   30
+Distance:  9  40  200
+"""
+```
+
+```elixir
+defmodule Race do
+  def process_numbers(row, joined \\ false) do
+    numbers = String.split(row, ~r/\s+/, trim: true)
+
+    if joined do
+      [String.to_integer(Enum.join(numbers))]
+    else
+      Enum.map(numbers, &String.to_integer/1)
+    end
+  end
+
+  def parse(input, joined \\ false) do
+    input
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn row -> Enum.at(String.split(row, ":", trim: true), 1) end)
+    |> Enum.map(fn row -> process_numbers(row, joined) end)
+    |> Enum.zip()
+  end
+
+  def race(input, joined \\ false) do
+    parse(input, joined)
+    |> Enum.map(fn {duration, distance} ->
+      Enum.filter(
+        Enum.map(Range.new(1, duration - 1), fn attempt -> (duration - attempt) * attempt end),
+        fn attempt -> attempt > distance end
+      )
+    end)
+    |> Enum.map(&Enum.count/1)
+    |> Enum.product()
+  end
+end
+```
+
+```elixir
+Race.parse(input)
+```
+
+```elixir
+Race.race(input)
+```
+
+```elixir
+full_input = """
+Time:        48     93     85     95
+Distance:   296   1928   1236   1391
+"""
+```
+
+```elixir
+Race.race(full_input)
+```
+
+```elixir
+new_input = """
+Time:      71530
+Distance:  940200
+"""
+
+Race.race(new_input)
+```
+
+```elixir
+Race.race(input, true)
+```
+
+```elixir
+Race.race(full_input, true)
+```

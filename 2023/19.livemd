@@ -1,0 +1,22 @@
+# Advent of Code 2023 Day 19
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule Workflow do
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n\n", trim: true)
+  end
+end
+```

@@ -1,0 +1,96 @@
+# Advent of Code 2023 Day 15
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule HolidayString do
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n", trim: true)
+    |> Enum.join("")
+    |> String.split(",", trim: true)
+  end
+
+  def hash(string) do
+    string
+    |> String.to_charlist()
+    |> Enum.reduce(0, fn code, acc -> rem((acc + code) * 17, 256) end)
+  end
+
+  def p1(input) do
+    parse(input)
+    |> Enum.map(fn string -> hash(string) end)
+    |> Enum.sum()
+  end
+
+  def process_lens([label, "-", _], map) do
+    box = Map.get(map, hash(label))
+
+    if box != nil do
+      %{map | hash(label) => Enum.reject(box, fn {lbl, _} -> lbl == label end)}
+    else
+      map
+    end
+  end
+
+  def process_lens([label, "=", focal_length], map) do
+    box = Map.get(map, hash(label))
+
+    new_box =
+      if box != nil do
+        idx = Enum.find_index(box, fn {lbl, _} -> lbl == label end)
+
+        if idx != nil do
+          List.replace_at(box, idx, {label, String.to_integer(focal_length)})
+        else
+          box ++ [{label, String.to_integer(focal_length)}]
+        end
+      else
+        [{label, String.to_integer(focal_length)}]
+      end
+
+    Map.put(map, hash(label), new_box)
+  end
+
+  def p2(input) do
+    map =
+      parse(input)
+      |> Enum.map(fn str -> Regex.split(~r{(\-|=)}, str, include_captures: true) end)
+      |> Enum.reduce(%{}, fn str, acc -> process_lens(str, acc) end)
+
+    map
+    |> Map.keys()
+    |> Enum.reject(fn key -> length(Map.get(map, key)) == 0 end)
+    |> Enum.flat_map(fn key ->
+      Enum.map(Enum.with_index(Map.get(map, key)), fn {{label, focal_length}, index} ->
+        {label, key + 1, index + 1, focal_length, (key + 1) * (index + 1) * focal_length}
+      end)
+    end)
+    |> dbg()
+    |> Enum.map(fn {_, _, _, _, power} -> power end)
+    |> Enum.sum()
+  end
+end
+```
+
+```elixir
+HolidayString.p1(input)
+```
+
+```elixir
+HolidayString.hash("qp")
+```
+
+```elixir
+HolidayString.p2(input)
+```

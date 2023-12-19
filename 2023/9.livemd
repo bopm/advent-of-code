@@ -1,0 +1,88 @@
+# Advent of Code 2023 Day 9
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.11.3"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule Oasis do
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn row -> Enum.map(String.split(row, " ", trim: true), &String.to_integer/1) end)
+  end
+
+  def process_row(row, rows) do
+    next_row =
+      row
+      |> Enum.map(fn [first, second] -> second - first end)
+      |> Enum.chunk_every(2, 1, :discard)
+
+    if List.flatten(next_row) |> Enum.uniq() == [0] do
+      [row | rows]
+    else
+      process_row(next_row, [row | rows])
+    end
+  end
+
+  def calculate_row(row, right \\ true) do
+    row =
+      process_row(Enum.chunk_every(row, 2, 1, :discard), [])
+      |> Enum.chunk_every(2, 1, :discard)
+
+    new_row =
+      if right do
+        row =
+          Enum.map(row, fn row ->
+            [Enum.at(Enum.at(Enum.at(row, 0), -1), 1), Enum.at(Enum.at(Enum.at(row, 1), -1), 1)]
+          end)
+
+        [
+          Enum.at(hd(row), 0) + Enum.at(hd(row), 1)
+          | Enum.map(tl(row), fn row -> Enum.at(row, 1) end)
+        ]
+      else
+        row =
+          Enum.map(row, fn row ->
+            [Enum.at(Enum.at(Enum.at(row, 0), 0), 0), Enum.at(Enum.at(Enum.at(row, 1), 0), 0)]
+          end)
+
+        [
+          Enum.at(hd(row), 1) - Enum.at(hd(row), 0)
+          | Enum.map(tl(row), fn row -> Enum.at(row, 1) end)
+        ]
+      end
+
+    new_row
+    |> Enum.reduce(0, fn cell, acc -> if right, do: acc + cell, else: cell - acc end)
+  end
+
+  def p1(input) do
+    parse(input)
+    |> Enum.map(fn row -> calculate_row(row) end)
+    |> Enum.sum()
+  end
+
+  def p2(input) do
+    parse(input)
+    |> Enum.map(fn row -> calculate_row(row, false) end)
+    |> Enum.sum()
+  end
+end
+```
+
+```elixir
+Oasis.p1(input)
+```
+
+```elixir
+Oasis.p2(input)
+```

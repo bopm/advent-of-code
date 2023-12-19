@@ -1,0 +1,150 @@
+# Advent of Code 2023 Day 11
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule Expanse do
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn row -> String.split(row, "", trim: true) end)
+  end
+
+  def empty_rows(image) do
+    Enum.with_index(image)
+    |> Enum.reject(fn {row, _index} -> Enum.any?(row, fn char -> char == "#" end) end)
+    |> Enum.map(fn {_row, index} -> index end)
+  end
+
+  def expand_vertically(image) do
+    image
+    |> empty_rows
+    |> Enum.reduce(image, fn index, acc ->
+      List.replace_at(acc, index, Enum.map(Enum.at(image, index), fn _ -> "+" end))
+    end)
+  end
+
+  def expand(input) do
+    image = parse(input)
+
+    expand_vertically(image)
+    |> Enum.zip()
+    |> Enum.map(&Tuple.to_list/1)
+    |> expand_vertically
+    |> Enum.zip()
+    |> Enum.map(&Tuple.to_list/1)
+  end
+
+  def expanded_x(_, 0, _, _), do: 0
+
+  def expanded_x(expanded, x, y, factor) do
+    count =
+      length(
+        Enum.reject(Enum.slice(Enum.at(expanded, y), Range.new(0, x - 1)), fn char ->
+          char != "+"
+        end)
+      )
+
+    if count > 0 do
+      x + count * (factor - 1)
+    else
+      x
+    end
+  end
+
+  def expanded_y(_, _, 0, _), do: 0
+
+  def expanded_y(expanded, x, y, factor) do
+    count =
+      length(
+        Enum.reject(
+          Enum.map(Enum.slice(expanded, Range.new(0, y - 1)), fn row -> Enum.at(row, x) end),
+          fn char -> char != "+" end
+        )
+      )
+
+    if count do
+      y + count * (factor - 1)
+    else
+      y
+    end
+  end
+
+  def map(input, factor \\ 2) do
+    expanded = expand(input)
+
+    expanded
+    |> Enum.with_index()
+    |> Enum.map(fn {row, idx} -> {Enum.with_index(row), idx} end)
+    |> Enum.flat_map(fn {row, row_idx} ->
+      Enum.map(row, fn {col, col_idx} ->
+        {col,
+         {expanded_x(expanded, col_idx, row_idx, factor),
+          expanded_y(expanded, col_idx, row_idx, factor)}}
+      end)
+    end)
+    |> dbg()
+    |> Enum.reject(fn {val, _} -> val != "#" end)
+    |> Enum.map(fn {_val, coords} -> coords end)
+  end
+
+  def sort_tuple(first_x, first_y, second_x, second_y) do
+    if first_x + first_y * 1000 < second_x + second_y * 1000 do
+      {
+        {first_x, first_y},
+        {second_x, second_y}
+      }
+    else
+      {
+        {second_x, second_y},
+        {first_x, first_y}
+      }
+    end
+  end
+
+  def p1(input, factor \\ 2) do
+    map = map(input, factor)
+
+    map
+    |> Enum.flat_map(fn {first_x, first_y} ->
+      Enum.map(map, fn {second_x, second_y} ->
+        if first_x == second_x && first_y == second_y,
+          do: nil,
+          else: sort_tuple(first_x, first_y, second_x, second_y)
+      end)
+    end)
+    |> Enum.uniq()
+    |> Enum.reject(fn el -> el == nil end)
+    |> Enum.map(fn {{first_x, first_y}, {second_x, second_y}} ->
+      {{first_x, first_y}, {second_x, second_y},
+       abs(second_x - first_x) + abs(second_y - first_y)}
+    end)
+    |> Enum.sort_by(fn {_, _, val} -> val end, :desc)
+    |> dbg()
+    |> Enum.map(fn {_, _, val} -> val end)
+    |> Enum.sum()
+  end
+
+  def p2(input) do
+    p1(input, 1_000_000)
+  end
+end
+```
+
+```elixir
+Expanse.p1(input)
+```
+
+```elixir
+Expanse.p2(input)
+```

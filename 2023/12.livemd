@@ -1,0 +1,40 @@
+# Advent of Code 2023 Day 12
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.12.0"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule HotSprings do
+  def parse_sections(row) do
+    {
+      String.split(hd(row), "", trim: true),
+      String.split(Enum.at(tl(row), 0), ",", trim: true)
+    }
+  end
+
+  def parse_row(row) do
+    row
+    |> String.split(" ", trim: true)
+    |> parse_sections
+  end
+
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n", trim: true)
+    |> Enum.map(&parse_row/1)
+  end
+end
+```
+
+```elixir
+HotSprings.parse(input)
+```
