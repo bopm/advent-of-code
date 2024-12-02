@@ -1,0 +1,54 @@
+# Advent of Code 2024/2
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.14.2"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule AoC2024_2 do
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn part -> String.split(part, " ", trim: true) |> Enum.map(fn item -> String.to_integer(item) end) end)
+  end
+
+  def filter(input) do
+    Enum.filter(input, fn row -> !Enum.any?(row, fn el -> abs(el) > 3 || el == 0 || !(Enum.all?(row, fn el -> el > 0 end) || Enum.all?(row, fn el -> el < 0 end)) end) end)
+  end
+
+  def part_1(input) do
+    input
+    |> parse
+    |> Enum.map(fn row -> Enum.chunk_every(row, 2, 1, :discard) |> Enum.map(fn [first, second] -> first - second end) end)
+    |> filter
+    |> Enum.count
+  end
+
+  def part_2(input) do
+    prepared_input = input
+    |> parse()
+    |> Enum.map(fn row -> Enum.chunk_every(row, 2, 1, :discard) |> Enum.map(fn [first, second] -> first - second end) end)
+
+    safe = prepared_input
+    |> filter
+
+    prepared_input -- safe
+  end
+end
+```
+
+```elixir
+AoC2024_2.part_1(input)
+```
+
+```elixir
+AoC2024_2.part_2(input)
+```

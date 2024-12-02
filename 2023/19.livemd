@@ -14,9 +14,103 @@ input = Kino.Input.textarea("input")
 
 ```elixir
 defmodule Workflow do
+  def process_rule(rule) do
+    case String.contains?(rule, ":") do
+      true ->
+        split =
+          rule
+          |> String.split(":", trim: true)
+
+        {String.split(Enum.at(split, 0), ~r/\<|\>/, include_captures: true), Enum.at(split, 1)}
+
+      false ->
+        rule
+    end
+  end
+
+  def process_route(route) do
+    route_parsed =
+      route
+      |> String.split(~r/{|}/, trim: true)
+
+    %{
+      Enum.at(route_parsed, 0) =>
+        Enum.map(String.split(Enum.at(route_parsed, 1), ",", trim: true), fn rule ->
+          process_rule(rule)
+        end)
+    }
+  end
+
+  def process_routes(routes) do
+    routes
+    |> Enum.reduce(%{}, fn route, acc -> Map.merge(acc, process_route(route)) end)
+  end
+
+  def process_weight(weight) do
+    weight
+    |> String.replace(~r/\{|\}/, "")
+    |> String.split(",", trim: true)
+    |> Enum.map(fn weight -> String.split(weight, "=") end)
+    |> Map.new(fn [k, v] -> {k, String.to_integer(v)} end)
+  end
+
+  def process_weights(weights) do
+    weights
+    |> Enum.map(fn weight -> process_weight(weight) end)
+  end
+
+  def process([routes, weights] = _) do
+    [
+      process_routes(routes),
+      process_weights(weights)
+    ]
+  end
+
   def parse(input) do
     Kino.Input.read(input)
     |> String.split("\n\n", trim: true)
+    |> Enum.map(fn part -> String.split(part, "\n", trim: true) end)
+    |> process
+  end
+
+  def compare(param, "<", val), do: param < String.to_integer(val)
+  def compare(param, ">", val), do: param > String.to_integer(val)
+
+  def walk(routes, key, weight) do
+    rule =
+      Enum.find(Map.get(routes, key), fn rule ->
+        if is_tuple(rule) do
+          [param, cond, value] = elem(rule, 0)
+          if compare(Map.get(weight, param), cond, value), do: true, else: false
+        else
+          false
+        end
+      end)
+
+    action = if rule, do: elem(rule, 1), else: Enum.at(Map.get(routes, key), -1)
+
+    case action do
+      "A" -> true
+      "R" -> false
+      _ -> walk(routes, action, weight)
+    end
+  end
+
+  def p1(input) do
+    [routes, weights] = parse(input)
+
+    weights
+    |> Enum.filter(fn weight -> walk(routes, "in", weight) end)
+    |> Enum.flat_map(fn el -> Map.values(el) end)
+    |> Enum.sum()
   end
 end
+```
+
+```elixir
+Workflow.parse(input)
+```
+
+```elixir
+Workflow.p1(input)
 ```
