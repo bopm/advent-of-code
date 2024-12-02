@@ -20,27 +20,41 @@ defmodule AoC2024_2 do
     |> Enum.map(fn part -> String.split(part, " ", trim: true) |> Enum.map(fn item -> String.to_integer(item) end) end)
   end
 
-  def filter(input) do
-    Enum.filter(input, fn row -> !Enum.any?(row, fn el -> abs(el) > 3 || el == 0 || !(Enum.all?(row, fn el -> el > 0 end) || Enum.all?(row, fn el -> el < 0 end)) end) end)
+  def filter(row) do
+    !Enum.any?(row, fn el -> abs(el) > 3 || el == 0 || !(Enum.all?(row, fn el -> el > 0 end) || Enum.all?(row, fn el -> el < 0 end)) end) 
+  end
+
+  def count(rows) do
+    Enum.map(rows, fn row -> count_row(row) end)
+  end
+
+  def count_row(row) do
+    Enum.chunk_every(row, 2, 1, :discard) |> Enum.map(fn [first, second] -> first - second end)
   end
 
   def part_1(input) do
     input
     |> parse
-    |> Enum.map(fn row -> Enum.chunk_every(row, 2, 1, :discard) |> Enum.map(fn [first, second] -> first - second end) end)
-    |> filter
+    |> count
+    |> Enum.filter(fn row -> filter(row) end)
     |> Enum.count
   end
 
+  def recount(_, true), do: true
+  def recount(row, false) do
+    row
+    |> Enum.with_index
+    |> Enum.map(fn {_, position} -> count_row(elem(List.pop_at(row, position),1)) end) 
+    |> Enum.any?(fn recomb -> filter(recomb) end)
+  end
+
   def part_2(input) do
-    prepared_input = input
-    |> parse()
-    |> Enum.map(fn row -> Enum.chunk_every(row, 2, 1, :discard) |> Enum.map(fn [first, second] -> first - second end) end)
-
-    safe = prepared_input
-    |> filter
-
-    prepared_input -- safe
+    input
+    |> parse
+    |> Enum.map(fn row -> { row, Enum.chunk_every(row, 2, 1, :discard) |> Enum.map(fn [first, second] -> first - second end) } end)
+    |> Enum.map(fn {row, transformed} -> { row, transformed, filter(transformed) } end)
+    |> Enum.map(fn {row, transformed, safe} -> { row, transformed, safe, recount(row, safe) } end)
+    |> Enum.count(fn {_, _, _, recount} -> recount end)
   end
 end
 ```
