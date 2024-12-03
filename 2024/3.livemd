@@ -1,0 +1,53 @@
+# Advent of Code 2024/3
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.14.2"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule AoC2024_3 do
+  def parse(input) do
+    Regex.scan(~r/(mul\((\d{1,3})\,(\d{1,3})\)+)/, Kino.Input.read(input))
+  end
+
+  def parse_2(input) do
+    [["do()", "do()"]] ++ Regex.scan(~r/(do\(\)|don\'t\(\)|mul\((\d{1,3})\,(\d{1,3})\)+)/, Kino.Input.read(input))
+  end
+
+  def part_1(input) do
+    input
+    |> parse
+    |> Enum.map(fn mul -> String.to_integer(Enum.at(mul, 2)) * String.to_integer(Enum.at(mul,3)) end)
+    |> Enum.sum
+  end
+
+  def part_2(input) do
+    input
+    |> parse_2
+    |> Enum.chunk_by(fn el -> Enum.member?(["do()", "don't()"], Enum.at(el, 0)) end)
+    |> Enum.chunk_every(2)
+    |> Enum.filter(fn row -> Enum.at(Enum.at(Enum.at(row, 0), 0), 0) == "do()" end)
+    |> Enum.flat_map(fn [_head | tail] -> tail end)
+    |> Enum.concat
+    |> dbg()
+    |> Enum.map(fn mul -> String.to_integer(Enum.at(mul, 2)) * String.to_integer(Enum.at(mul,3)) end)
+    |> Enum.sum
+  end
+end
+```
+
+```elixir
+AoC2024_3.part_1(input)
+```
+
+```elixir
+AoC2024_3.part_2(input)
+```
