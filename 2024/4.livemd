@@ -1,0 +1,92 @@
+# Advent of Code 2024/4
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.14.2"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule AoC2024_4 do
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn part -> String.split(part, "", trim: true) end)
+  end
+
+  def rotate_90(matrix) do
+    matrix |> Enum.zip() |> Enum.map(&Tuple.to_list/1) |> Enum.reverse()
+    # matrix |> Enum.zip_with(&Function.identity/1)
+  end
+
+   def rotate_45(matrix) do
+    rows = length(matrix)
+    cols = length(List.first(matrix))
+    
+    # Start offset from -(rows-1) to include all parallels above and below main diagonal
+    for offset <- (-(rows-1))..(cols-1) do
+      for i <- 0..max(rows, cols) do
+        j = i + offset
+        if i >= 0 and i < rows and j >= 0 and j < cols do
+          matrix |> Enum.at(i) |> Enum.at(j)
+        end
+      end |> Enum.reject(&is_nil/1)
+    end
+  end
+
+  def test(input) do
+    input
+    |> parse
+    |> rotate_90
+    |> rotate_45
+  end
+
+  def part_1(input) do
+    parsed = input
+    |> parse
+    [
+      parsed
+      |> Enum.map(fn row -> Enum.join(row) end),
+      parsed
+      |> rotate_90
+      |> Enum.map(fn row -> Enum.join(row) end),
+      parsed
+      |> rotate_45
+      |> Enum.map(fn row -> Enum.join(row) end),
+      parsed
+      |> rotate_90
+      |> rotate_45
+      |> Enum.map(fn row -> Enum.join(row) end)
+    ]
+    |> Enum.concat
+    |> Enum.map(fn substring -> Regex.scan(~r/(?=(XMAS|SAMX))/, substring) end)
+    |> dbg()
+    |> Enum.concat
+    |> length
+    
+    # Regex.scan(~r/xmas|samx/, set_string) 
+    # |> length() 
+  end
+
+  def part_2(input) do
+    input
+    |> parse
+  end
+end
+```
+
+```elixir
+# AoC2024_4.test(input)
+
+AoC2024_4.part_1(input)
+```
+
+```elixir
+AoC2024_4.part_2(input)
+```
