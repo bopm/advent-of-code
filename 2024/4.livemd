@@ -75,15 +75,32 @@ defmodule AoC2024_4 do
   end
 
   def part_2(input) do
-    input
+    matrix = input
     |> parse
+
+    rows = length(matrix)
+    cols = length(List.first(matrix))
+    for y <- 0..rows-3 do
+      for x <- 0..cols-3 do
+        matrix 
+        |> Enum.slice(y..y+2) 
+        |> Enum.map(fn row -> Enum.slice(row, x..x+2) end)
+      end 
+    end
+    |> Enum.concat
+    |> Enum.map(fn [[e_1_1, _, e_1_3], [_, e_2_2, _], [e_3_1, _, e_3_3]] -> [[e_1_1, nil, e_1_3], [nil, e_2_2, nil], [e_3_1, nil, e_3_3]] end)
+    |> dbg()
+    |> Enum.count(fn pattern -> Enum.member?([
+      [["M", nil, "M"], [nil, "A", nil], ["S", nil, "S"]],
+      [["M", nil, "S"], [nil, "A", nil], ["M", nil, "S"]],
+      [["S", nil, "M"], [nil, "A", nil], ["S", nil, "M"]],
+      [["S", nil, "S"], [nil, "A", nil], ["M", nil, "M"]],
+    ], pattern) end)
   end
 end
 ```
 
 ```elixir
-# AoC2024_4.test(input)
-
 AoC2024_4.part_1(input)
 ```
 
