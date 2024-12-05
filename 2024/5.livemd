@@ -14,28 +14,44 @@ input = Kino.Input.textarea("input")
 
 ```elixir
 defmodule AoC2024_5 do
-  def convert_to_tuple(lists) do
-    lists
-    |> Enum.map(fn list -> 
-      List.to_tuple(
-        list |> Enum.map(fn el -> String.to_integer(el) end)
-      )
-      end)
+  def convert(lists) do
+    Enum.map(lists, fn list -> Enum.map(list, fn el -> String.to_integer(el) end) end)
   end
   
   def parse(input) do
     Kino.Input.read(input)
     |> String.split("\n\n", trim: true)
     |> Enum.map(fn part -> String.split(part, "\n", trim: true) end)
-    |> (fn [a, b] -> {
-      a |> Enum.map(fn item -> String.split(item, "|", trim: true) end) |> convert_to_tuple,
-      b |> Enum.map(fn item -> String.split(item, ",", trim: true) end) |> convert_to_tuple 
-    } end).()
+    |> (fn [a, b] -> [
+      b |> Enum.map(fn item -> String.split(item, ",", trim: true) end) |> convert,
+      a |> Enum.map(fn item -> String.split(item, "|", trim: true) end) |> convert
+    ] end).()
+  end
+
+  def slice_set(set, 0), do: [[], Enum.slice(set, 1..(length(set)-1))]
+  def slice_set(set, index) when length(set) - 1 == index, do: [Enum.slice(set, 0..(length(set)-2)), []]
+  def slice_set(set, index) do
+    [
+      Enum.slice(set, 0..(index - 1)),
+      Enum.slice(set, (index + 1)..(length(set) - 1))
+    ]
+  end
+
+  def valid_page({page, index}, set, rules) do
+    [before_set, after_set] = slice_set(set, index)
+    after_pages = Enum.filter(rules, fn rule -> Enum.at(rule, 0) == page end) |> Enum.map(fn rule -> Enum.at(rule, 1) end)
+    before_pages = Enum.filter(rules, fn rule -> Enum.at(rule, 1) == page end) |> Enum.map(fn rule -> Enum.at(rule, 0) end)
+    MapSet.disjoint?(MapSet.new(before_set), MapSet.new(after_pages)) && MapSet.disjoint?(MapSet.new(after_set), MapSet.new(before_pages))
   end
 
   def part_1(input) do
-    input
+    [page_sets, rules] = input
     |> parse
+
+    page_sets
+    |> Enum.filter(fn set -> !Enum.any?(Enum.with_index(set), fn page -> !valid_page(page, set, rules) end) end)
+    |> Enum.map(fn set -> Enum.at(set, div(length(set),2)) end)
+    |> Enum.sum
   end
 
   def part_2(input) do
@@ -51,4 +67,8 @@ AoC2024_5.part_1(input)
 
 ```elixir
 AoC2024_5.part_2(input)
+```
+
+```elixir
+AoC2024_5.slice_set([75,47,61,53,29], 0)
 ```
