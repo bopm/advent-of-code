@@ -54,9 +54,19 @@ defmodule AoC2024_5 do
     |> Enum.sum
   end
 
+  def before_by_rules(first, second, rules) do
+    length(Enum.filter(rules, fn rule -> Enum.at(rule, 0) == first && Enum.at(rule, 1) == second end)) > 0
+  end
+
   def part_2(input) do
-    input
+    [page_sets, rules] = input
     |> parse
+
+    page_sets
+    |> Enum.filter(fn set -> Enum.any?(Enum.with_index(set), fn page -> !valid_page(page, set, rules) end) end)
+    |> Enum.map(fn set -> Enum.sort(set, &(before_by_rules(&1, &2, rules))) end)
+    |> Enum.map(fn set -> Enum.at(set, div(length(set),2)) end)
+    |> Enum.sum
   end
 end
 ```
@@ -67,8 +77,4 @@ AoC2024_5.part_1(input)
 
 ```elixir
 AoC2024_5.part_2(input)
-```
-
-```elixir
-AoC2024_5.slice_set([75,47,61,53,29], 0)
 ```
