@@ -1,0 +1,120 @@
+# Advent of Code 2024/6
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.14.2"},
+  {:kino_vega_lite, "~> 0.1.9"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule AoC2024_6 do
+  alias VegaLite, as: Vl
+
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n\n", trim: true)
+    |> Enum.map(fn part -> String.split(part, "\n", trim: true) |> Enum.map(fn row -> String.split(row, "", trim: true) end) end)
+    |> Enum.at(0)
+  end
+
+  def get(matrix, row, col) do
+    matrix
+    |> Enum.at(row, [])
+    |> Enum.at(col)
+  end
+
+  def set(matrix, row, col, value) do
+    List.update_at(matrix, row, fn r ->
+      List.update_at(r, col, fn _ -> value end)
+    end)
+  end
+
+  def start(matrix) do
+    row_map = Enum.map(matrix, fn row -> Enum.find_index(row, fn el -> el == "^" end) end)
+    row = Enum.find_index(row_map, fn e -> e != nil end)
+    { row, Enum.find(row_map, fn e -> e != nil end), :up }
+  end
+
+  def new_coord({row, col, :up}), do: {row - 1, col}
+  def new_coord({row, col, :down}), do: {row + 1, col}
+  def new_coord({row, col, :left}), do: {row, col - 1}
+  def new_coord({row, col, :right}), do: {row, col + 1}
+
+  def new_direction(:up), do: :right
+  def new_direction(:right), do: :down
+  def new_direction(:down), do: :left
+  def new_direction(:left), do: :up
+
+  def step(matrix, {row, col, direction}, history \\ []) do
+    {new_row, new_col} = new_coord({row, col, direction})
+    cond do
+      (new_row < 0 || new_row == length(matrix) || new_col < 0 || new_col == length(Enum.at(matrix, 0))) == true ->
+        history
+      get(matrix, new_row, new_col) != "." && get(matrix, new_row, new_col) != "^" ->
+        step(matrix, {row, col, new_direction(direction)}, history)
+      Enum.member?(history, {new_row, new_col, direction}) ->
+        nil
+      true ->
+        step(matrix, {new_row, new_col, direction}, history ++ [{new_row, new_col, direction}])
+    end
+  end
+
+  def draw(history, matrix) do
+    Enum.reduce(history, matrix, fn {row, col}, acc -> set(acc, row, col, "X") end)
+  end
+
+  def part_1(input) do
+    matrix = input
+    |> parse
+
+    start = start(matrix)
+    history = step(matrix, start, [start])
+ 
+    Vl.new()
+    |> Vl.data_from_values(Enum.map(history, fn {y, x, _} -> %{x: x, y: y} end))
+    |> Vl.mark(:point)
+    |> Vl.encode_field(:x, "x")
+    |> Vl.encode_field(:y, "y")
+    |> Kino.VegaLite.new()
+    |> Kino.render()
+    
+    Enum.count(Enum.uniq(history |> Enum.map(fn {x, y, _} -> {x, y} end)))
+  end
+
+  def part_2(input) do
+    matrix = input
+    |> parse
+
+    start = start(matrix)
+    history = step(matrix, start, [start])
+    
+    Enum.filter(
+      Enum.chunk_every(history, 2, 1, :discard),
+      fn [{first_row, first_col, direction}, {_second_row, _second_col, second_direction}] ->
+        new_direction = new_direction(direction)
+        new_coord = new_coord({first_row, first_col, new_direction})
+        direction == second_direction &&
+          Enum.member?(Enum.map(history, fn {row, col, _} -> {row, col} end), { elem(new_coord, 0), elem(new_coord, 1) })
+      end
+    )
+    |> Enum.filter(fn [first, second] -> step(set(matrix, elem(second, 0), elem(second, 1), "X"), first) == nil end)
+    |> Enum.map(fn [_, second] -> second end)
+    |> Enum.count
+  end
+end
+```
+
+```elixir
+AoC2024_6.part_1(input)
+```
+
+```elixir
+AoC2024_6.part_2(input)
+```
