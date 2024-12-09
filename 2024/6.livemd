@@ -64,11 +64,7 @@ defmodule AoC2024_6 do
       (new_row < 0 || new_row == length(matrix) || new_col < 0 || new_col == length(Enum.at(matrix, 0))) == true ->
         history
       get(matrix, new_row, new_col) != "." && get(matrix, new_row, new_col) != "^" ->
-        if contains_consecutive?(history, {row, col, direction}, {new_row, new_col, new_direction(direction)}) do
-          nil
-        else
-          step(matrix, {row, col, new_direction(direction)}, history)
-        end
+        step(matrix, {row, col, new_direction(direction)}, history)
       contains_consecutive?(history, {row, col, direction}, {new_row, new_col, direction}) ->
         nil
       true ->
