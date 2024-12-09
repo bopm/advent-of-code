@@ -51,7 +51,7 @@ defmodule AoC2024_6 do
   def new_direction(:right), do: :down
   def new_direction(:down), do: :left
   def new_direction(:left), do: :up
-
+  
   def step(matrix, {row, col, direction}, history \\ []) do
     {new_row, new_col} = new_coord({row, col, direction})
     cond do
@@ -95,18 +95,35 @@ defmodule AoC2024_6 do
     start = start(matrix)
     history = step(matrix, start, [start])
     
-    Enum.filter(
+    points = Enum.filter(
       Enum.chunk_every(history, 2, 1, :discard),
-      fn [{first_row, first_col, direction}, {_second_row, _second_col, second_direction}] ->
-        new_direction = new_direction(direction)
-        new_coord = new_coord({first_row, first_col, new_direction})
+      fn [{first_row, first_col, direction}, {second_row, second_col, second_direction}] ->
         direction == second_direction &&
-          Enum.member?(Enum.map(history, fn {row, col, _} -> {row, col} end), { elem(new_coord, 0), elem(new_coord, 1) })
+          step(set(matrix, second_row, second_col, "X"), {first_row, first_col, direction}, [{first_row, first_col, direction}]) == nil 
       end
     )
-    |> Enum.filter(fn [first, second] -> step(set(matrix, elem(second, 0), elem(second, 1), "X"), first) == nil end)
     |> Enum.map(fn [_, second] -> second end)
-    |> Enum.count
+    |> Enum.uniq
+
+
+    Vl.new()
+    |> Vl.layers([
+      Vl.new()
+      |> Vl.data_from_values(Enum.map(history, fn {y, x, _} -> %{x: x, y: y} end))
+      |> Vl.mark(:point)
+      |> Vl.encode_field(:x, "x")
+      |> Vl.encode_field(:y, "y"),
+
+      Vl.new()
+      |> Vl.data_from_values(Enum.map(points, fn {y, x, _} -> %{x: x, y: y} end))
+      |> Vl.mark(:tick)
+      |> Vl.encode_field(:x, "x")
+      |> Vl.encode_field(:y, "y")
+    ])
+    |> Kino.VegaLite.new()
+    |> Kino.render()
+
+    Enum.count(points)
   end
 end
 ```
