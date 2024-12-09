@@ -51,6 +51,12 @@ defmodule AoC2024_6 do
   def new_direction(:right), do: :down
   def new_direction(:down), do: :left
   def new_direction(:left), do: :up
+
+  def contains_consecutive?(enum, value1, value2) do
+    enum
+    |> Enum.chunk_every(2, 1, :discard)
+    |> Enum.any?(fn [a, b] -> a == value1 and b == value2 end)
+  end
   
   def step(matrix, {row, col, direction}, history \\ []) do
     {new_row, new_col} = new_coord({row, col, direction})
@@ -58,8 +64,12 @@ defmodule AoC2024_6 do
       (new_row < 0 || new_row == length(matrix) || new_col < 0 || new_col == length(Enum.at(matrix, 0))) == true ->
         history
       get(matrix, new_row, new_col) != "." && get(matrix, new_row, new_col) != "^" ->
-        step(matrix, {row, col, new_direction(direction)}, history)
-      Enum.member?(history, {new_row, new_col, direction}) ->
+        if contains_consecutive?(history, {row, col, direction}, {new_row, new_col, new_direction(direction)}) do
+          nil
+        else
+          step(matrix, {row, col, new_direction(direction)}, history)
+        end
+      contains_consecutive?(history, {row, col, direction}, {new_row, new_col, direction}) ->
         nil
       true ->
         step(matrix, {new_row, new_col, direction}, history ++ [{new_row, new_col, direction}])
@@ -98,13 +108,12 @@ defmodule AoC2024_6 do
     points = Enum.filter(
       Enum.chunk_every(history, 2, 1, :discard),
       fn [{first_row, first_col, direction}, {second_row, second_col, second_direction}] ->
-        direction == second_direction &&
-          step(set(matrix, second_row, second_col, "X"), {first_row, first_col, direction}, [{first_row, first_col, direction}]) == nil 
+        (direction == second_direction) &&
+        (step(set(matrix, second_row, second_col, "X"), {first_row, first_col, direction}) == nil) 
       end
     )
     |> Enum.map(fn [_, second] -> second end)
     |> Enum.uniq
-
 
     Vl.new()
     |> Vl.layers([
