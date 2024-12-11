@@ -1,4 +1,4 @@
-# Advent of Code 2024/8
+# Advent of Code 2024/9
 
 ```elixir
 Mix.install([
@@ -13,17 +13,58 @@ input = Kino.Input.textarea("input")
 ```
 
 ```elixir
-defmodule AoC2024_7 do
+defmodule AoC2024_9 do
   def parse(input) do
     Kino.Input.read(input)
-    |> String.split("\n\n", trim: true)
-    |> Enum.map(fn part -> String.split(part, "\n", trim: true) |> Enum.map(fn row -> String.split(row, " ", trim: true) end) end)
-    |> Enum.at(0)
+    |> String.split("", trim: true)
+    |> Enum.map(fn el -> String.to_integer(el) end)
+  end
+
+  def defragment(file, []), do: { file, []}
+  def defragment(file, free_blocks) do
+    block_length = length(file[:blocks])
+    usable_free_blocks = Enum.filter(free_blocks, fn block -> block < Enum.max(file[:blocks]) end)
+    free_length = length(usable_free_blocks)
+
+    IO.inspect({file[:index], MapSet.new(file[:blocks]), usable_free_blocks})
+    
+    cond do
+      free_length < block_length ->
+        {_, blocks_to_keep} = Enum.split(file[:blocks] |> Enum.reverse, free_length)
+        IO.inspect({usable_free_blocks, blocks_to_keep})
+        { Map.merge(file, %{blocks: usable_free_blocks ++ blocks_to_keep}), [] }
+      true ->
+        {file_blocks, free_blocks} = Enum.split(usable_free_blocks, block_length)
+        { Map.merge(file, %{blocks: file_blocks}), free_blocks }  
+    end
   end
 
   def part_1(input) do
-    input
+    {fat, _} = input
     |> parse
+    |> Enum.chunk_every(2,2, [0])
+    |> Enum.with_index()
+    |> Enum.map(fn {[file, empty], index} -> %{ index: index, file: file, empty: empty } end)
+    |> Enum.map_reduce(0, fn file, acc -> { Map.merge(file, %{blocks: Enum.map(0..file[:file] - 1, fn x -> x + acc end)}), acc + file[:file] + file[:empty]} end)
+    
+    blocks = fat
+    |> Enum.flat_map(fn file -> file[:blocks] end)
+
+    free_blocks = Range.to_list(1..Enum.max(blocks)) -- blocks
+    
+    {defragmented_fat, _} = fat
+    |> Enum.reverse
+    |> dbg()
+    |> Enum.map_reduce(free_blocks, fn file, acc -> defragment(file, acc) end)
+
+    defragmented_fat
+    |> Enum.flat_map(fn %{index: index, blocks: blocks} ->
+      Enum.map(blocks, fn block -> {block, index} end)
+    end)
+    |> Enum.sort_by(&(elem(&1,0)))
+    |> Enum.map(&(elem(&1,0) * elem(&1,1)))
+    |> dbg()
+    |> Enum.sum
   end
 
   def part_2(input) do
@@ -34,9 +75,9 @@ end
 ```
 
 ```elixir
-AoC2024_7.part_1(input)
+AoC2024_9.part_1(input)
 ```
 
 ```elixir
-AoC2024_7.part_2(input)
+AoC2024_9.part_2(input)
 ```
