@@ -42,15 +42,27 @@ defmodule AoC2024_9 do
   def defragment_file(file, []), do: { file, [] }
   def defragment_file(file, free_blocks) do
     block_length = length(file[:blocks])
+    free_blocks = Enum.filter(free_blocks, fn block -> Enum.max(block) < Enum.max(file[:blocks]) end)
     index = Enum.find_index(free_blocks, fn block -> length(block) >= block_length end)
     cond do
       index == nil -> 
         { file, free_blocks }
+      index == length(free_blocks) - 1 ->
+        {file_blocks, remaining_free_blocks} = Enum.split(Enum.at(free_blocks, index), block_length)
+        IO.inspect(remaining_free_blocks)
+        {
+          Map.merge(file, %{blocks: file_blocks}), 
+          Enum.slice(free_blocks, 0..index-1)
+          |> Enum.concat([remaining_free_blocks])
+          |> Enum.filter(fn el -> length(el) > 0 end)
+        } 
       index > 0 ->
         {file_blocks, remaining_free_blocks} = Enum.split(Enum.at(free_blocks, index), block_length)
         {
           Map.merge(file, %{blocks: file_blocks}), 
-          (Enum.slice(free_blocks, 0..index-1) ++ [remaining_free_blocks] ++ Enum.slice(free_blocks, (index + 1)..(length(free_blocks) - 1)))
+          Enum.slice(free_blocks, 0..index-1)
+          |> Enum.concat([remaining_free_blocks]) 
+          |> Enum.concat(Enum.slice(free_blocks, (index + 1)..(length(free_blocks) - 1)))
           |> Enum.filter(fn el -> length(el) > 0 end)
         }
       index == 0 ->
