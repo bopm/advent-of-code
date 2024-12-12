@@ -39,6 +39,32 @@ defmodule AoC2024_9 do
     end
   end
 
+  def defragment_file(file, []), do: { file, [] }
+  def defragment_file(file, free_blocks) do
+    block_length = length(file[:blocks])
+    index = Enum.find_index(free_blocks, fn block -> length(block) >= block_length end)
+    cond do
+      index == nil -> 
+        { file, free_blocks }
+      index > 0 ->
+        {file_blocks, remaining_free_blocks} = Enum.split(Enum.at(free_blocks, index), block_length)
+        {
+          Map.merge(file, %{blocks: file_blocks}), 
+          (Enum.slice(free_blocks, 0..index-1) ++ [remaining_free_blocks] ++ Enum.slice(free_blocks, (index + 1)..(length(free_blocks) - 1)))
+          |> Enum.filter(fn el -> length(el) > 0 end)
+        }
+      index == 0 ->
+        {file_blocks, remaining_free_blocks} = Enum.split(Enum.at(free_blocks, index), block_length)
+        {
+          Map.merge(file, %{blocks: file_blocks}), 
+          [remaining_free_blocks] 
+          |> dbg
+          |> Enum.concat(Enum.slice(free_blocks, 1..length(free_blocks) - 1))
+          |> Enum.filter(fn el -> length(el) > 0 end)
+        }
+    end
+  end
+
   def part_1(input) do
     {fat, _} = input
     |> parse
@@ -68,8 +94,44 @@ defmodule AoC2024_9 do
   end
 
   def part_2(input) do
-    input
+    {fat, _} = input
     |> parse
+    |> Enum.chunk_every(2,2, [0])
+    |> Enum.with_index()
+    |> Enum.map(fn {[file, empty], index} -> %{ index: index, file: file, empty: empty } end)
+    |> Enum.map_reduce(0, fn file, acc -> { Map.merge(file, %{blocks: Enum.map(0..file[:file] - 1, fn x -> x + acc end)}), acc + file[:file] + file[:empty]} end)
+    
+    blocks = fat
+    |> Enum.flat_map(fn file -> file[:blocks] end)
+
+    free_blocks = 
+      (Range.to_list(1..Enum.max(blocks)) -- blocks)
+      |> Enum.chunk_every(2,1, [-1])
+      |> Enum.chunk_while([], fn [first, second], acc -> 
+          cond do
+            first + 1 != second ->
+              {:cont, acc ++ [first], []}
+            true ->
+              {:cont, acc ++ [first], }
+          end
+        end, fn
+          [] -> {:cont, []}
+          acc -> {:cont, Enum.reverse(acc), []}
+        end)
+
+    {defragmented_fat, _} = fat
+    |> Enum.reverse
+    |> dbg()
+    |> Enum.map_reduce(free_blocks, fn file, acc -> defragment_file(file, acc) end)
+
+    defragmented_fat
+    |> Enum.flat_map(fn %{index: index, blocks: blocks} ->
+      Enum.map(blocks, fn block -> {block, index} end)
+    end)
+    |> Enum.sort_by(&(elem(&1,0)))
+    |> Enum.map(&(elem(&1,0) * elem(&1,1)))
+    |> dbg()
+    |> Enum.sum
   end
 end
 ```
