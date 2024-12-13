@@ -1,0 +1,90 @@
+# Advent of Code 2024/10
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.14.2"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule AoC2024_10 do
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn el -> String.split(el, "", trim: true) |> Enum.map(&(String.to_integer(&1))) end)
+  end
+
+  def get(matrix, row, col) do
+    matrix
+    |> Enum.at(row, [])
+    |> Enum.at(col)
+  end
+
+  def left(_row, 0, _matrix), do: nil
+  def left(row, col, matrix), do: { row, col - 1, get(matrix, row, col - 1) }
+  def top(0, _col, _matrix), do: nil
+  def top(row, col, matrix), do: { row - 1, col, get(matrix, row - 1, col) }
+  def right(_row, col, matrix) when length(hd(matrix)) == col, do: nil
+  def right(row, col, matrix), do: { row, col + 1, get(matrix, row, col + 1) }
+  def down(row, _col, matrix) when length(matrix) == row, do: nil
+  def down(row, col, matrix), do: { row + 1, col, get(matrix, row + 1, col) }
+
+  def starts(matrix) do
+    matrix
+    |> Enum.with_index
+    |> Enum.reduce([], fn {cols, row}, row_acc -> 
+        row_acc ++ (cols
+        |> Enum.with_index
+        |> Enum.reduce([], fn {element, col}, acc -> 
+            if element == 0, do: acc ++ [{row, col}], else: acc
+          end))
+      end)
+  end
+
+  def walk(matrix, {row, col}, height \\ 0) do
+    cond do
+      height == 9 ->
+        [{row, col}]
+      true ->
+        [
+          left(row, col, matrix),
+          right(row, col, matrix),
+          top(row, col, matrix),
+          down(row, col, matrix)
+        ]
+        |> Enum.filter(fn path -> path != nil end)
+        |> Enum.filter(fn { _, _, value} -> value == height + 1 end)
+        |> Enum.flat_map(fn { new_row, new_col, value} -> walk(matrix, {new_row, new_col}, value) end)
+    end
+  end
+
+  def part_1(input) do
+    matrix = input
+    |> parse
+
+    matrix  
+    |> starts
+    |> Enum.map(fn start -> walk(matrix, start) |> Enum.uniq |> Enum.count end)
+    |> Enum.sum
+  end
+
+  def part_2(input) do
+    input
+    |> parse
+  end
+end
+```
+
+```elixir
+AoC2024_10.part_1(input)
+```
+
+```elixir
+AoC2024_10.part_2(input)
+```
