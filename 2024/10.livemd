@@ -47,10 +47,10 @@ defmodule AoC2024_10 do
       end)
   end
 
-  def walk(matrix, {row, col}, height \\ 0) do
+  def walk(matrix, {row, col}, height \\ 0, keep_path \\ false, path \\ []) do
     cond do
       height == 9 ->
-        [{row, col}]
+        if keep_path, do: [path ++ [{row, col}]], else: [{row, col}]
       true ->
         [
           left(row, col, matrix),
@@ -60,7 +60,7 @@ defmodule AoC2024_10 do
         ]
         |> Enum.filter(fn path -> path != nil end)
         |> Enum.filter(fn { _, _, value} -> value == height + 1 end)
-        |> Enum.flat_map(fn { new_row, new_col, value} -> walk(matrix, {new_row, new_col}, value) end)
+        |> Enum.flat_map(fn { new_row, new_col, value} -> walk(matrix, {new_row, new_col}, value, keep_path, path ++ [{row, col}]) end)
     end
   end
 
@@ -75,8 +75,14 @@ defmodule AoC2024_10 do
   end
 
   def part_2(input) do
-    input
+    matrix = input
     |> parse
+
+    matrix  
+    |> starts
+    |> Enum.flat_map(fn start -> walk(matrix, start, 0, true) end)
+    |> Enum.uniq
+    |> Enum.count
   end
 end
 ```
