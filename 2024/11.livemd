@@ -1,0 +1,69 @@
+# Advent of Code 2024/11
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.14.2"}
+])
+```
+
+## Section
+
+```elixir
+input = Kino.Input.textarea("input")
+```
+
+```elixir
+defmodule AoC2024_11 do
+  def parse(input) do
+    Kino.Input.read(input)
+    |> String.split("\s", trim: true)
+  end
+
+  def blink("0"), do: ["1"]
+  def blink(number) when rem(div(bit_size(number),8),2) == 0 do
+    split = String.split_at(number, div(String.length(number),2)) 
+    [Integer.to_string(String.to_integer(elem(split,0))), Integer.to_string(String.to_integer(elem(split,1)))]
+  end 
+  def blink(number), do: [Integer.to_string(String.to_integer(number) * 2024)]
+  
+  def part_1(input) do
+    parsed = input
+    |> parse
+    
+    0..24
+    |> Range.to_list
+    |> Enum.reduce(parsed, fn _, acc -> acc |> Enum.flat_map(&(blink(&1))) end)
+    |> Enum.count()
+  end
+
+  def part_2(input) do
+    parsed = input
+    |> parse
+    
+    0..74
+    |> Range.to_list
+    |> Enum.reduce({parsed, %{}}, fn _, {acc, cache} -> 
+      {recalculated, cache} = acc 
+      |> Enum.flat_map_reduce(cache, fn el, cache ->
+        if(Map.has_key?(cache, el)) do
+          { cache[el], cache }
+        else
+          calc = blink(el)
+          { calc, Map.merge(cache, %{el => calc}) }
+        end
+      end)
+      {recalculated, cache}
+    end)
+    |> elem(0)
+    |> Enum.count
+  end
+end
+```
+
+```elixir
+AoC2024_11.part_1(input)
+```
+
+```elixir
+AoC2024_11.part_2(input)
+```
