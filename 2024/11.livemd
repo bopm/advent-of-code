@@ -19,30 +19,20 @@ defmodule AoC2024_11 do
     |> String.split("\s", trim: true)
   end
 
-  def update_collection(collection, old_number, number) do
-    if (collection[old_number] || 0) - 1 == 0 do
-      Map.merge(collection, %{
-        number => (collection[number] || 0) + 1
-      })
-      |> Map.delete(old_number)
-    else
-      Map.merge(collection, %{
-        old_number => (collection[old_number] || 0) - 1, 
-        number => (collection[number] || 0) + 1
-      })
-    end
+  def update_collection(collection, number, counter) do
+    Map.merge(collection, %{ number => (collection[number] || 0) + counter })
   end
-  def update_collection(collection, old_number, new_number, another_new_number) do
-    collection = update_collection(collection, old_number, new_number)
-    Map.merge(collection, %{another_new_number => (collection[another_new_number] || 0) + 1})
+  def update_collection(collection, new_number, counter, another_new_number) do
+    collection = update_collection(collection, new_number, counter)
+    Map.merge(collection, %{another_new_number => (collection[another_new_number] || 0) + counter})
   end
 
-  def blink(collection, "0"), do: update_collection(collection, "0", "1")
-  def blink(collection, number) when rem(div(bit_size(number),8),2) == 0 do
+  def blink(collection, "0", counter), do: update_collection(collection, "1", counter)
+  def blink(collection, number, counter) when rem(div(bit_size(number),8),2) == 0 do
     split = String.split_at(number, div(String.length(number),2)) 
-    update_collection(collection, number, Integer.to_string(String.to_integer(elem(split,0))), Integer.to_string(String.to_integer(elem(split,1))))
+    update_collection(collection, Integer.to_string(String.to_integer(elem(split,0))), counter, Integer.to_string(String.to_integer(elem(split,1))))
   end 
-  def blink(collection, number), do: update_collection(collection, number, Integer.to_string(String.to_integer(number) * 2024)) 
+  def blink(collection, number, counter), do: update_collection(collection, Integer.to_string(String.to_integer(number) * 2024), counter) 
   
   def part_1(input) do
     parsed = input
@@ -53,34 +43,39 @@ defmodule AoC2024_11 do
     |> Enum.reduce(
       Enum.reduce(parsed, %{}, fn el, acc -> Map.merge(acc, %{el => 1}) end),
       fn i, collection ->
-        IO.inspect({i, collection})
-        Enum.reduce(Map.keys(collection), collection, fn el, acc -> 
-          blink(acc, el) 
+        res = Enum.reduce(Map.keys(collection), %{}, fn el, acc -> 
+          IO.inspect({acc, el, blink(acc, el, collection[el])})
+          blink(acc, el, collection[el]) 
         end)
+        IO.inspect({i, res})
+        res
       end)
-    |> Enum.zip_with()
+    |> Map.to_list
+    |> Enum.map(fn {_, count} -> count end)
+    |> dbg()
+    |> Enum.sum
   end
 
   def part_2(input) do
-    input
+parsed = input
     |> parse
     
-    # 0..74
-    # |> Range.to_list
-    # |> Enum.reduce({parsed, %{}}, fn _, {acc, cache} -> 
-    #   {recalculated, cache} = acc 
-    #   |> Enum.flat_map_reduce(cache, fn el, cache ->
-    #     if(Map.has_key?(cache, el)) do
-    #       { cache[el], cache }
-    #     else
-    #       calc = blink(el)
-    #       { calc, Map.merge(cache, %{el => calc}) }
-    #     end
-    #   end)
-    #   {recalculated, cache}
-    # end)
-    # |> elem(0)
-    # |> Enum.count
+    0..74
+    |> Range.to_list
+    |> Enum.reduce(
+      Enum.reduce(parsed, %{}, fn el, acc -> Map.merge(acc, %{el => 1}) end),
+      fn i, collection ->
+        res = Enum.reduce(Map.keys(collection), %{}, fn el, acc -> 
+          IO.inspect({acc, el, blink(acc, el, collection[el])})
+          blink(acc, el, collection[el]) 
+        end)
+        IO.inspect({i, res})
+        res
+      end)
+    |> Map.to_list
+    |> Enum.map(fn {_, count} -> count end)
+    |> dbg()
+    |> Enum.sum
   end
 end
 ```
@@ -90,5 +85,5 @@ AoC2024_11.part_1(input)
 ```
 
 ```elixir
-# AoC2024_11.part_2(input)
+AoC2024_11.part_2(input)
 ```
